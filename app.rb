@@ -31,7 +31,7 @@ class FakerApp < Sinatra::Base
     content_type :json
     JSON.pretty_generate(mappings.collect do |base, klass|
       {
-        :base_url => "/#{klass.name.split('::').last.downcase}",
+        :base_url => "/#{base}",
         :options => get_options(base, klass)
       }
     end)
@@ -46,7 +46,19 @@ class FakerApp < Sinatra::Base
     get "/#{base}/:option" do |option|
       content_type :json
       if allowed_options(klass).include?(option.to_sym)
-        { :text => klass.send(option) }.to_json
+        parameters =  klass.method(option).parameters
+        if parameters.length > 0
+          args = parameters.collect do |type, name|
+            if name == :option
+              params[name]
+            else
+              params[name].to_i
+            end
+          end
+          { :text => klass.send(option, *args) }.to_json
+        else
+          { :text => klass.send(option) }.to_json
+        end
       else
         401
       end
@@ -57,10 +69,15 @@ class FakerApp < Sinatra::Base
   
   def get_options(base, klass)
     allowed_options(klass).collect do |option|
+      arguments = klass.method(option).parameters.collect do |type, name|
+        {:name => name, :type => type}
+      end
+      
       begin
         {
           :url => "/#{base}/#{option}",
-          :example => klass.send(option)
+          :example => (klass.send(option) rescue nil),
+          :params => arguments
         }
       rescue
         nil
