@@ -29,18 +29,18 @@ class FakerApp < Sinatra::Base
   
   get '/' do
     content_type :json
-    mappings.collect do |base, klass|
+    JSON.pretty_generate(mappings.collect do |base, klass|
       {
         :base_url => "/#{klass.name.split('::').last.downcase}",
         :options => get_options(base, klass)
       }
-    end.to_s
+    end)
   end
   
   mappings.each do |base, klass|
     get "/#{base}" do
       content_type :json
-      get_options(base, klass).to_json
+      JSON.pretty_generate(get_options(base, klass))
     end
 
     get "/#{base}/:option" do |option|
