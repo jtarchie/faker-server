@@ -1,8 +1,5 @@
 rvm:
-  - 1.8.7
+  #relying on specific Ruby 1.9 behavior
   - 1.9.2
   - 1.9.3
-  - rbx
-  - jruby
   - ruby-head
-  - ree
