@@ -3,6 +3,7 @@ require "bundler/setup"
 require "ffaker"
 require "sinatra"
 require "json"
+require "pp"
 
 class FakerApp < Sinatra::Base
   mappings = {
@@ -48,41 +49,65 @@ class FakerApp < Sinatra::Base
       if allowed_options(klass).include?(option.to_sym)
         parameters =  klass.method(option).parameters
         if parameters.length > 0
-          args = parameters.collect do |type, name|
-            if name == :option
-              params[name]
-            else
-              params[name].to_i
-            end
+          args = parse_arguments(parameters)
+          if args.compact.length > 0
+            { :text => klass.send(option, *args) }.to_json
+          else
+            { :text => klass.send(option) }.to_json
           end
-          { :text => klass.send(option, *args) }.to_json
         else
           { :text => klass.send(option) }.to_json
         end
       else
-        401
+        [401, {:error=>"Unauthorized. Probably called method not allowed to access."}.to_json]
       end
     end
   end
   
+  error ArgumentError do
+    content_type :json
+    [
+      400,
+      {:error => "Missing argument for method. Please GET / for available options."}.to_json
+    ]
+  end
+  
   private
+  
+  def parse_arguments(parameters)
+    parameters.collect do |type, name|
+      parse_values(params[name])
+    end
+  end
+  
+  def parse_values(value)
+    if value.is_a?(Hash)
+      params = {}
+      value.each do |k, v|
+        params[k.to_sym] = parse_values(v)
+      end
+      params
+    elsif value.to_i.to_s == value
+      value.to_i
+    elsif ["true","false"].include?(value)
+      eval(value)
+    else
+      value
+    end
+  end
   
   def get_options(base, klass)
     allowed_options(klass).collect do |option|
       arguments = klass.method(option).parameters.collect do |type, name|
         {:name => name, :type => type}
       end
-      
-      begin
-        {
-          :url => "/#{base}/#{option}",
-          :example => (klass.send(option) rescue nil),
-          :params => arguments
-        }
-      rescue
-        nil
-      end
-    end.compact
+
+      {
+        :url => "/#{base}/#{option}",
+        :example => (klass.send(option) rescue nil),
+        :params => arguments
+      }
+    end
   end
   
   def allowed_options(klass)
