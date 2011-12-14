@@ -3,9 +3,12 @@ require "bundler/setup"
 require "ffaker"
 require "sinatra"
 require "json"
+require "rack/contrib"
 require "active_support/inflector"
 
 class FakerApp < Sinatra::Base
+  use Rack::JSONP
+  
   MAPPINGS = {:faker => Faker}
   (Faker.constants - [:VERSION, :ArrayUtils, :ModuleUtils, :LETTERS]).each do |klass|
     MAPPINGS[klass.to_s.underscore.to_sym] = Faker.const_get(klass)
