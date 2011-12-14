@@ -5,6 +5,8 @@ gem "ffaker", "1.10.1"
 gem "heroku", "2.16.1"
 gem "json", "1.6.3"
 gem "rake", "0.9.2.2"
+gem "activesupport", :require => false
+gem "i18n"
 
 group :development do
   gem "shotgun", "0.9"

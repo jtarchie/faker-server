@@ -56,7 +56,7 @@ describe FakerApp do
       it_should_behave_like "a valid JSON response"
 
       it "has all the Faker wrappers" do
-        json.length.should == 19
+        json.length.should == 21
       end
       
       it "describes each wrapper" do
@@ -72,9 +72,7 @@ describe FakerApp do
   end
   
   describe "when getting specific actions docs" do
-    context "GET /address" do
-      before { get '/address' }
-      
+    shared_examples_for "specific doc request" do
       it_should_behave_like "a valid JSON response"
       
       it "describes the def wrapper" do
@@ -82,6 +80,20 @@ describe FakerApp do
         json.each do |option|
           option.keys.should =~ ["url", "example", "params"]
         end
+      end
+    end
+    
+    context "GET /address" do
+      before { get '/address' }
+      
+      it_should_behave_like "specific doc request"
+    end
+    
+    context "GET /module" do
+      FakerApp::MAPPINGS.each do |base, klass|
+        before { get "/#{base}"}
+        
+        it_should_behave_like "specific doc request"        
       end
     end
   end

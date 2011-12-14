@@ -3,34 +3,17 @@ require "bundler/setup"
 require "ffaker"
 require "sinatra"
 require "json"
-require "pp"
+require "active_support/inflector"
 
 class FakerApp < Sinatra::Base
-  mappings = {
-    :address => Faker::Address,
-    :address_ca => Faker::AddressCA,
-    :address_de => Faker::AddressDE,
-    :company => Faker::Company,
-    :faker => Faker,
-    :internet => Faker::Internet,
-    :name => Faker::Name,
-    :name_cn => Faker::NameCN,
-    :name_de => Faker::NameDE,
-    :name_ja => Faker::NameJA,
-    :name_ru => Faker::NameRU,
-    :name_sn => Faker::NameSN,
-    :geolocation => Faker::Geolocation,
-    :hipster_ipsum => Faker::HipsterIpsum,
-    :html_ipsum => Faker::HTMLIpsum,
-    :lorem => Faker::Lorem,
-    :lorem_cn => Faker::LoremCN,
-    :phone_number => Faker::PhoneNumber,
-    :phone_number_sn => Faker::PhoneNumberSN
-  }
+  MAPPINGS = {:faker => Faker}
+  (Faker.constants - [:VERSION, :ArrayUtils, :ModuleUtils, :LETTERS]).each do |klass|
+    MAPPINGS[klass.to_s.underscore.to_sym] = Faker.const_get(klass)
+  end
   
   get '/' do
     content_type :json
-    JSON.pretty_generate(mappings.collect do |base, klass|
+    JSON.pretty_generate(MAPPINGS.collect do |base, klass|
       {
         :base_url => "/#{base}",
         :options => get_options(base, klass)
@@ -38,7 +21,7 @@ class FakerApp < Sinatra::Base
     end)
   end
   
-  mappings.each do |base, klass|
+  MAPPINGS.each do |base, klass|
     get "/#{base}" do
       content_type :json
       JSON.pretty_generate(get_options(base, klass))
